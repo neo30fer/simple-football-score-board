@@ -26,7 +26,6 @@ public class ScoreBoardServiceTest
         // Arrange
         _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
             .Returns((string teamName) => GetMockedTeam(teamName));
-        //_gameRepository.Setup(x => x.Add(It.IsAny<Game>()));
 
         // Act
         var game = _scoreBoardService.StartGame("Brazil", "England");
@@ -44,9 +43,10 @@ public class ScoreBoardServiceTest
     public void StartGame_WhenHomeTeamParameterIsEmpty_ShouldReturnAnException()
     {
         // Act
-        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame(string.Empty, "England"));
+        Game act() => _scoreBoardService.StartGame(string.Empty, "England");
 
         // Assert
+        var exception = Assert.Throws<InvalidTeamException>(act);
         Assert.Equal("The 'homeTeamName' must be non empty and not null.", exception.Message);
     }
 
@@ -54,9 +54,10 @@ public class ScoreBoardServiceTest
     public void StartGame_WhenHomeTeamParameterIsNull_ShouldReturnAnException()
     {
         // Act
-        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame(null, "England"));
+        Game act() => _scoreBoardService.StartGame(null, "England");
 
         // Assert
+        var exception = Assert.Throws<InvalidTeamException>(act);
         Assert.Equal("The 'homeTeamName' must be non empty and not null.", exception.Message);
     }
 
@@ -68,9 +69,10 @@ public class ScoreBoardServiceTest
             .Returns((string teamName) => GetMockedTeam(teamName));
 
         // Act
-        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame("Brazil", string.Empty));
+        Game act() => _scoreBoardService.StartGame("Brazil", string.Empty);
 
         // Assert
+        var exception = Assert.Throws<InvalidTeamException>(act);
         Assert.Equal("The 'awayTeamName' must be non empty and not null.", exception.Message);
     }
 
@@ -82,9 +84,10 @@ public class ScoreBoardServiceTest
             .Returns((string teamName) => GetMockedTeam(teamName));
 
         // Act
-        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame("Brazil", null));
+        Game act() => _scoreBoardService.StartGame("Brazil", null);
 
         // Assert
+        var exception = Assert.Throws<InvalidTeamException>(act);
         Assert.Equal("The 'awayTeamName' must be non empty and not null.", exception.Message);
     }
 
@@ -98,9 +101,10 @@ public class ScoreBoardServiceTest
             .Returns(true);
 
         // Act
-        var exception = Assert.Throws<TeamAlreadyInBoardGameException>(() => _scoreBoardService.StartGame("Brazil", "England"));
+        Game act() => _scoreBoardService.StartGame("Brazil", "England");
 
         // Assert
+        var exception = Assert.Throws<TeamAlreadyInBoardGameException>(act);
         Assert.Equal("The team 'Brazil' is already playing in a current game.", exception.Message);
     }
 
@@ -116,9 +120,10 @@ public class ScoreBoardServiceTest
             .Returns(true);
 
         // Act
-        var exception = Assert.Throws<TeamAlreadyInBoardGameException>(() => _scoreBoardService.StartGame("Mexico", "England"));
+        Game act() => _scoreBoardService.StartGame("Mexico", "England");
 
         // Assert
+        var exception = Assert.Throws<TeamAlreadyInBoardGameException>(act);
         Assert.Equal("The team 'England' is already playing in a current game.", exception.Message);
     }
 
@@ -143,9 +148,10 @@ public class ScoreBoardServiceTest
     public void FinishGame_WhenGameParameterIsNull_ShouldReturnAnException()
     {
         // Act
-        var exception = Assert.Throws<ArgumentNullException>(() => _scoreBoardService.FinishGame(null));
+        void act() => _scoreBoardService.FinishGame(null);
 
         // Assert
+        var exception = Assert.Throws<ArgumentNullException>(act);
         Assert.Equal("Value cannot be null. (Parameter 'game')", exception.Message);
     }
 
@@ -158,9 +164,10 @@ public class ScoreBoardServiceTest
             .Returns(false);
 
         // Act
-        var exception = Assert.Throws<NoneGamesInBoardException>(() => _scoreBoardService.FinishGame(game));
+        void act() => _scoreBoardService.FinishGame(game);
 
         // Assert
+        var exception = Assert.Throws<NoneGamesInBoardException>(act);
         Assert.Equal("Currently there are not any games in the board.", exception.Message);
     }
 
@@ -175,9 +182,10 @@ public class ScoreBoardServiceTest
             .Returns((Game)null);
 
         // Act
-        var exception = Assert.Throws<EntityNotFoundException>(() => _scoreBoardService.FinishGame(game));
+        void act() => _scoreBoardService.FinishGame(game);
 
         // Assert
+        var exception = Assert.Throws<EntityNotFoundException>(act);
         Assert.Equal("The game could not be found in the board.", exception.Message);
     }
 
@@ -209,9 +217,10 @@ public class ScoreBoardServiceTest
     public void UpdateScore_WhenGameParameterIsNull_ShouldReturnAnException()
     {
         // Act
-        var exception = Assert.Throws<ArgumentNullException>(() => _scoreBoardService.UpdateScore(null, 0, 1));
+        Game act() => _scoreBoardService.UpdateScore(null, 0, 1);
 
         // Assert
+        var exception = Assert.Throws<ArgumentNullException>(act);
         Assert.Equal("Value cannot be null. (Parameter 'game')", exception.Message);
     }
 
@@ -225,9 +234,10 @@ public class ScoreBoardServiceTest
             .Returns(game);
 
         // Act
-        var exception = Assert.Throws<InvalidScoreException>(() => _scoreBoardService.UpdateScore(game, homeTeamScore, awayTeamScore));
+        Game act() => _scoreBoardService.UpdateScore(game, homeTeamScore, awayTeamScore);
 
         // Assert
+        var exception = Assert.Throws<InvalidScoreException>(act);
         Assert.Equal(expectedMessage, exception.Message);
     }
 
@@ -240,9 +250,10 @@ public class ScoreBoardServiceTest
             .Returns((Game)null);
 
         // Act
-        var exception = Assert.Throws<EntityNotFoundException>(() => _scoreBoardService.UpdateScore(game, 1, 0));
+        Game act() => _scoreBoardService.UpdateScore(game, 1, 0);
 
         // Assert
+        var exception = Assert.Throws<EntityNotFoundException>(act);
         Assert.Equal("The game could not be found in the board.", exception.Message);
     }
 
@@ -271,6 +282,21 @@ public class ScoreBoardServiceTest
         Assert.All(boardGamesSummary, x => Assert.True(x.AwayTeamScore >= 0));
         Assert.Equal("Brazil", boardGamesSummary.First().HomeTeam.Name);
         Assert.Equal("Mexico", boardGamesSummary.Last().AwayTeam.Name);
+    }
+
+    [Fact]
+    public void GetBoardGamesSummary_WhenThereAreNoGamesInBoard_ShouldReturnAnException()
+    {
+        // Arrange
+        _gameRepository.Setup(x => x.GetAll())
+            .Returns(Enumerable.Empty<Game>().ToList());
+
+        // Act
+        List<Game> act() => _scoreBoardService.GetBoardGamesSummary();
+
+        // Assert
+        var exception = Assert.Throws<NoneGamesInBoardException>(act);
+        Assert.Equal("Currently there are not any games in the board.", exception.Message);
     }
 
     public static List<object[]> InvalidTeamScores =>

@@ -18,7 +18,7 @@ public class ScoreBoardService : IScoreBoardService
 
     public Game StartGame(string homeTeamName, string awayTeamName)
     {
-        // Validations
+        #region Validations
         if (string.IsNullOrEmpty(homeTeamName))
         {
             throw new InvalidTeamException($"The '{nameof(homeTeamName)}' must be non empty and not null.");
@@ -35,8 +35,9 @@ public class ScoreBoardService : IScoreBoardService
         // Check if there is already a game in progress in the board with any of the given teams
         CheckIfTeamIsInBoardGameOrThrow(homeTeam);
         CheckIfTeamIsInBoardGameOrThrow(awayTeam);
+        #endregion
 
-        // Add game to the board
+        // Add game to the board list
         var game = new Game
         {
             Id = Guid.NewGuid().ToString(),
@@ -52,7 +53,7 @@ public class ScoreBoardService : IScoreBoardService
 
     public void FinishGame(Game game)
     {
-        // Validations
+        #region Validations
         if (game is null)
         {
             throw new ArgumentNullException(nameof(game));
@@ -64,14 +65,15 @@ public class ScoreBoardService : IScoreBoardService
         }
 
         var existingGame = _gameRepository.GetById(game.Id) ?? throw new EntityNotFoundException("The game could not be found in the board.");
+        #endregion
 
-        // Remove game from the board
+        // Remove game from the board list
         _gameRepository.Remove(existingGame);
     }
 
     public Game UpdateScore(Game game, int homeTeamScore, int awayTeamScore)
     {
-        // Validations
+        #region Validations
         if (game is null)
         {
             throw new ArgumentNullException(nameof(game));
@@ -98,6 +100,7 @@ public class ScoreBoardService : IScoreBoardService
         {
             throw new InvalidScoreException($"The new score for Home Team ({awayTeamScore}) cannot be less than the actual score ({existingGame.AwayTeamScore}).");
         }
+        #endregion
 
         // Update game score
         return _gameRepository.UpdateScore(game.Id, homeTeamScore, awayTeamScore);
