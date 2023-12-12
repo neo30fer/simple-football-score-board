@@ -69,7 +69,7 @@ public class ScoreBoardService : IScoreBoardService
         _gameRepository.Remove(existingGame);
     }
 
-    public void UpdateScore(Game game, int homeTeamScore, int awayTeamScore)
+    public Game UpdateScore(Game game, int homeTeamScore, int awayTeamScore)
     {
         // Validations
         if (game is null)
@@ -100,7 +100,7 @@ public class ScoreBoardService : IScoreBoardService
         }
 
         // Update game score
-        _gameRepository.UpdateScore(game.Id, homeTeamScore, awayTeamScore);
+        return _gameRepository.UpdateScore(game.Id, homeTeamScore, awayTeamScore);
     }
 
     public List<Game> GetBoardGamesSummary()

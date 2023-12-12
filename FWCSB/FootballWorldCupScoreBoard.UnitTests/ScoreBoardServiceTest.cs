@@ -2,51 +2,59 @@ using FootballWorldCupScoreBoard.Application.Exceptions;
 using FootballWorldCupScoreBoard.Application.Services;
 using FootballWorldCupScoreBoard.Domain.Models;
 using FootballWorldCupScoreBoard.Persistence.Interfaces;
-using FootballWorldCupScoreBoard.Persistence.Repositories;
+using Moq;
 
 namespace FootballWorldCupScoreBoard.UnitTests;
 
 public class ScoreBoardServiceTest
 {
-    private readonly IGameRepository _gameRepository;
-    private readonly ITeamRepository _teamRepository;
+    private readonly Mock<IGameRepository> _gameRepository;
+    private readonly Mock<ITeamRepository> _teamRepository;
 
     private readonly ScoreBoardService _scoreBoardService;
 
     public ScoreBoardServiceTest()
     {
-        _gameRepository = new GameRepository();
-        _teamRepository = new TeamRepository();
-        _scoreBoardService = new ScoreBoardService(_gameRepository, _teamRepository);
+        _gameRepository = new();
+        _teamRepository = new();
+        _scoreBoardService = new ScoreBoardService(_gameRepository.Object, _teamRepository.Object);
     }
 
     [Fact]
     public void StartGame_WhenSuccessfulPath_ShouldAddNewGameToBoard()
     {
         // Arrange
-        _teamRepository.Add(GetMockedHomeTeam());
-        _teamRepository.Add(GetMockedAwayTeam());
+        _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
+            .Returns((string teamName) => GetMockedTeam(teamName));
+        //_gameRepository.Setup(x => x.Add(It.IsAny<Game>()));
 
         // Act
         var game = _scoreBoardService.StartGame("Brazil", "England");
 
         // Assert
-        var boardGame = _gameRepository.GetAll().FirstOrDefault(g => g.Id == game.Id); ;
-        Assert.NotNull(boardGame);
-        Assert.Equal("Brazil", boardGame.HomeTeam.Name);
-        Assert.Equal("England", boardGame.AwayTeam.Name);
-        Assert.Equal(0, boardGame.HomeTeamScore);
-        Assert.Equal(0, boardGame.AwayTeamScore);
+        Assert.NotNull(game);
+        Assert.Equal("Brazil", game.HomeTeam.Name);
+        Assert.Equal("England", game.AwayTeam.Name);
+        Assert.Equal(0, game.HomeTeamScore);
+        Assert.Equal(0, game.AwayTeamScore);
+        _gameRepository.Verify(x => x.Add(It.IsAny<Game>()), Times.Once);
     }
 
     [Fact]
     public void StartGame_WhenHomeTeamParameterIsEmpty_ShouldReturnAnException()
     {
-        // Arrange
-        _teamRepository.Add(GetMockedAwayTeam());
-
         // Act
         var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame(string.Empty, "England"));
+
+        // Assert
+        Assert.Equal("The 'homeTeamName' must be non empty and not null.", exception.Message);
+    }
+
+    [Fact]
+    public void StartGame_WhenHomeTeamParameterIsNull_ShouldReturnAnException()
+    {
+        // Act
+        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame(null, "England"));
 
         // Assert
         Assert.Equal("The 'homeTeamName' must be non empty and not null.", exception.Message);
@@ -56,7 +64,8 @@ public class ScoreBoardServiceTest
     public void StartGame_WhenAwayTeamParameterIsEmpty_ShouldReturnAnException()
     {
         // Arrange
-        _teamRepository.Add(GetMockedHomeTeam());
+        _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
+            .Returns((string teamName) => GetMockedTeam(teamName));
 
         // Act
         var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame("Brazil", string.Empty));
@@ -66,12 +75,27 @@ public class ScoreBoardServiceTest
     }
 
     [Fact]
+    public void StartGame_WhenAwayTeamParameterIsNull_ShouldReturnAnException()
+    {
+        // Arrange
+        _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
+            .Returns((string teamName) => GetMockedTeam(teamName));
+
+        // Act
+        var exception = Assert.Throws<InvalidTeamException>(() => _scoreBoardService.StartGame("Brazil", null));
+
+        // Assert
+        Assert.Equal("The 'awayTeamName' must be non empty and not null.", exception.Message);
+    }
+
+    [Fact]
     public void StartGame_WhenHomeTeamIsAlreadyInBoardGame_ShouldReturnAnException()
     {
         // Arrange
-        _teamRepository.Add(GetMockedHomeTeam());
-        _teamRepository.Add(GetMockedAwayTeam());
-        _gameRepository.Add(GetMockedGame());
+        _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
+            .Returns((string teamName) => GetMockedTeam(teamName));
+        _gameRepository.Setup(x => x.ExistsByTeam("Brazil"))
+            .Returns(true);
 
         // Act
         var exception = Assert.Throws<TeamAlreadyInBoardGameException>(() => _scoreBoardService.StartGame("Brazil", "England"));
@@ -84,12 +108,12 @@ public class ScoreBoardServiceTest
     public void StartGame_WhenAwayTeamIsAlreadyInBoardGame_ShouldReturnAnException()
     {
         // Arrange
-        var homeTeam = new Team { Name = "Mexico" };
-        var awayTeam = GetMockedAwayTeam();
-
-        _teamRepository.Add(homeTeam);
-        _teamRepository.Add(GetMockedAwayTeam());
-        _gameRepository.Add(GetMockedGame());
+        _teamRepository.Setup(x => x.GetByName(It.IsAny<string>()))
+            .Returns((string teamName) => GetMockedTeam(teamName));
+        _gameRepository.Setup(x => x.ExistsByTeam("Mexico"))
+            .Returns(false);
+        _gameRepository.Setup(x => x.ExistsByTeam("England"))
+            .Returns(true);
 
         // Act
         var exception = Assert.Throws<TeamAlreadyInBoardGameException>(() => _scoreBoardService.StartGame("Mexico", "England"));
@@ -103,13 +127,16 @@ public class ScoreBoardServiceTest
     {
         // Arrange
         var game = GetMockedGame();
-        _gameRepository.Add(game);
+        _gameRepository.Setup(x => x.Any())
+            .Returns(true);
+        _gameRepository.Setup(x => x.GetById(It.IsAny<string>()))
+            .Returns(game);
 
         // Act
         _scoreBoardService.FinishGame(game);
 
         // Assert
-        Assert.Empty(_gameRepository.GetAll());
+        _gameRepository.Verify(x => x.Remove(It.IsAny<Game>()), Times.Once);
     }
 
     [Fact]
@@ -127,6 +154,8 @@ public class ScoreBoardServiceTest
     {
         // Arrange
         var game = GetMockedGame();
+        _gameRepository.Setup(x => x.Any())
+            .Returns(false);
 
         // Act
         var exception = Assert.Throws<NoneGamesInBoardException>(() => _scoreBoardService.FinishGame(game));
@@ -139,15 +168,11 @@ public class ScoreBoardServiceTest
     public void FinishGame_WhenGamesDoesNotExistsInBoard_ShouldReturnAnException()
     {
         // Arrange
-        var game = new Game
-        {
-            Id = Guid.NewGuid().ToString(),
-            HomeTeam = new Team { Name = "Mexico" },
-            AwayTeam = new Team { Name = "Spain" },
-            HomeTeamScore = 0,
-            AwayTeamScore = 0
-        };
-        _gameRepository.Add(GetMockedGame());
+        var game = GetMockedGame();
+        _gameRepository.Setup(x => x.Any())
+            .Returns(true);
+        _gameRepository.Setup(x => x.GetById(It.IsAny<string>()))
+            .Returns((Game)null);
 
         // Act
         var exception = Assert.Throws<EntityNotFoundException>(() => _scoreBoardService.FinishGame(game));
@@ -161,16 +186,23 @@ public class ScoreBoardServiceTest
     {
         // Arrange
         var game = GetMockedGame();
-        _gameRepository.Add(game);
+        _gameRepository.Setup(x => x.GetById(It.IsAny<string>()))
+            .Returns(game);
+        _gameRepository.Setup(x => x.UpdateScore(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(() =>
+            {
+                game.HomeTeamScore = 1;
+                return game;
+            });
 
         // Act
-        _scoreBoardService.UpdateScore(game, 1, 0);
+        var updatedGame = _scoreBoardService.UpdateScore(game, 1, 0);
 
         // Assert
-        var updatedGame = _gameRepository.GetById(game.Id);
         Assert.NotNull(updatedGame);
         Assert.Equal(1, updatedGame.HomeTeamScore);
         Assert.Equal(0, updatedGame.AwayTeamScore);
+        _gameRepository.Verify(x => x.UpdateScore(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
@@ -189,7 +221,8 @@ public class ScoreBoardServiceTest
     {
         // Arrange
         var game = GetMockedGame(1, 2);
-        _gameRepository.Add(game);
+        _gameRepository.Setup(x => x.GetById(It.IsAny<string>()))
+            .Returns(game);
 
         // Act
         var exception = Assert.Throws<InvalidScoreException>(() => _scoreBoardService.UpdateScore(game, homeTeamScore, awayTeamScore));
@@ -202,15 +235,9 @@ public class ScoreBoardServiceTest
     public void UpdateScore_WhenGamesDoesNotExistsInBoard_ShouldReturnAnException()
     {
         // Arrange
-        var game = new Game
-        {
-            Id = Guid.NewGuid().ToString(),
-            HomeTeam = new Team { Name = "Mexico" },
-            AwayTeam = new Team { Name = "Spain" },
-            HomeTeamScore = 0,
-            AwayTeamScore = 0
-        };
-        _gameRepository.Add(GetMockedGame());
+        var game = GetMockedGame();
+        _gameRepository.Setup(x => x.GetById(It.IsAny<string>()))
+            .Returns((Game)null);
 
         // Act
         var exception = Assert.Throws<EntityNotFoundException>(() => _scoreBoardService.UpdateScore(game, 1, 0));
@@ -223,23 +250,13 @@ public class ScoreBoardServiceTest
     public void GetBoardGamesSummary_WhenSuccessfulPath_ShouldReturnAListOfGames()
     {
         // Arrange
-        _gameRepository.Add(GetMockedGame(1, 2));
-        _gameRepository.Add(new Game
-        {
-            Id = Guid.NewGuid().ToString(),
-            HomeTeam = new Team { Name = "Spain" },
-            AwayTeam = new Team { Name = "Mexico" },
-            HomeTeamScore = 0,
-            AwayTeamScore = 0
-        });
-        _gameRepository.Add(new Game
-        {
-            Id = Guid.NewGuid().ToString(),
-            HomeTeam = new Team { Name = "Germany" },
-            AwayTeam = new Team { Name = "Italy" },
-            HomeTeamScore = 2,
-            AwayTeamScore = 0
-        });
+        _gameRepository.Setup(x => x.GetAll())
+            .Returns(new List<Game>
+            {
+                GetMockedGame(1, 2),
+                GetMockedGame(0, 0, "Spain", "Mexico"),
+                GetMockedGame(2, 0, "Germany", "Italy"),
+            });
 
         // Act
         var boardGamesSummary = _scoreBoardService.GetBoardGamesSummary();
@@ -265,16 +282,14 @@ public class ScoreBoardServiceTest
             new object[] { 1, 1, "The new score for Home Team (1) cannot be less than the actual score (2)." },
         };
 
-    private static Team GetMockedHomeTeam() => new() { Name = "Brazil" };
+    private static Team GetMockedTeam(string teamName) => new() { Name = teamName };
 
-    private static Team GetMockedAwayTeam() => new() { Name = "England" };
-
-    private static Game GetMockedGame(int homeTeamScore = 0, int awayTeamScore = 0) =>
+    private static Game GetMockedGame(int homeTeamScore = 0, int awayTeamScore = 0, string homeTeamName = "Brazil", string awayTeamName = "England") =>
         new()
         {
             Id = Guid.NewGuid().ToString(),
-            HomeTeam = GetMockedHomeTeam(),
-            AwayTeam = GetMockedAwayTeam(),
+            HomeTeam = GetMockedTeam(homeTeamName),
+            AwayTeam = GetMockedTeam(awayTeamName),
             HomeTeamScore = homeTeamScore,
             AwayTeamScore = awayTeamScore
         };
