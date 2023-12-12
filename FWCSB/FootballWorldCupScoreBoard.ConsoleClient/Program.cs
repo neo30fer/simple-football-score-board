@@ -3,8 +3,9 @@ using FootballWorldCupScoreBoard.Domain.Models;
 using FootballWorldCupScoreBoard.Persistence.Repositories;
 using System.Text;
 
-Console.WriteLine("Football World Cup Score Board Test Client");
+Console.WriteLine("Football World Cup Score Board Test Client\n");
 
+// Create some teams for data seeding purposes
 TeamRepository teamRepository = new();
 var team1 = new Team { Name = "Mexico" };
 var team2 = new Team { Name = "Canada" };
@@ -27,6 +28,7 @@ teamRepository.Add(team8);
 teamRepository.Add(team9);
 teamRepository.Add(team10);
 
+// This is the service to be used, in order to access to the score board operations
 ScoreBoardService scoreBoardService = new(new GameRepository(), teamRepository);
 
 var game1 = scoreBoardService.StartGame(team1.Name, team2.Name);
@@ -41,6 +43,7 @@ scoreBoardService.UpdateScore(game3, 2, 2);
 scoreBoardService.UpdateScore(game4, 6, 6);
 scoreBoardService.UpdateScore(game5, 3, 1);
 
+// This is a way to show the ordered list of board games
 var gamesSummary = scoreBoardService.GetBoardGamesSummary();
 StringBuilder stringBuilder = new();
 for(int i = 0; i < gamesSummary.Count; i++)

@@ -16,6 +16,14 @@ public class ScoreBoardService : IScoreBoardService
         _teamRepository = teamRepository;
     }
 
+    /// <summary>
+    /// Create a new game with the initial scores of 0 (for both home and away teams). This action will add the game to the board list.
+    /// </summary>
+    /// <param name="homeTeamName"></param>
+    /// <param name="awayTeamName"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidTeamException"></exception>
+    /// <exception cref="EntityNotFoundException"></exception>
     public Game StartGame(string homeTeamName, string awayTeamName)
     {
         #region Validations
@@ -51,6 +59,13 @@ public class ScoreBoardService : IScoreBoardService
         return game;
     }
 
+    /// <summary>
+    /// Finish a game. This action will remove the game from the board list.
+    /// </summary>
+    /// <param name="game"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="NoneGamesInBoardException"></exception>
+    /// <exception cref="EntityNotFoundException"></exception>
     public void FinishGame(Game game)
     {
         #region Validations
@@ -71,6 +86,16 @@ public class ScoreBoardService : IScoreBoardService
         _gameRepository.Remove(existingGame);
     }
 
+    /// <summary>
+    /// Update the home team and away team score for a given game.
+    /// </summary>
+    /// <param name="game"></param>
+    /// <param name="homeTeamScore"></param>
+    /// <param name="awayTeamScore"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="InvalidScoreException"></exception>
+    /// <exception cref="EntityNotFoundException"></exception>
     public Game UpdateScore(Game game, int homeTeamScore, int awayTeamScore)
     {
         #region Validations
@@ -106,6 +131,11 @@ public class ScoreBoardService : IScoreBoardService
         return _gameRepository.UpdateScore(game.Id, homeTeamScore, awayTeamScore);
     }
 
+    /// <summary>
+    /// Get a summary of the games from the board, ordered by the total overall score, and then, by the date of start of the game.
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NoneGamesInBoardException"></exception>
     public List<Game> GetBoardGamesSummary()
     {
         var boardGames = _gameRepository.GetAll();
@@ -119,7 +149,11 @@ public class ScoreBoardService : IScoreBoardService
             .ThenByDescending(x => x.CreatedAt)
             .ToList();
     }
-
+    /// <summary>
+    /// Check if there is a game in the board with the team passed as parameter (either home or away).
+    /// </summary>
+    /// <param name="team"></param>
+    /// <exception cref="TeamAlreadyInBoardGameException"></exception>
     private void CheckIfTeamIsInBoardGameOrThrow(Team team)
     {
         if (_gameRepository.ExistsByTeam(team.Name))
